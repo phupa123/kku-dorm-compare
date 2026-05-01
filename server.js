@@ -60,45 +60,41 @@ const dormSchema = new mongoose.Schema({
     id: String,
     name: { type: String, required: true },
     zone: String,
-    price: Number,
-    priceMin: Number,
-    priceMax: Number,
-    deposit: Number,
-    depositMin: Number,
-    depositMax: Number,
-    coords: {
-        lat: Number,
-        lng: Number
-    },
+    price: mongoose.Schema.Types.Mixed,
+    priceMin: mongoose.Schema.Types.Mixed,
+    priceMax: mongoose.Schema.Types.Mixed,
+    deposit: mongoose.Schema.Types.Mixed,
+    depositMin: mongoose.Schema.Types.Mixed,
+    depositMax: mongoose.Schema.Types.Mixed,
+    coords: mongoose.Schema.Types.Mixed,
     features: [String],
     images: [String],
     description: String,
     contact: String,
     reference: String,
-    roomTypes: [{
-        id: String,
-        type: String,
-        price: Number,
-        status: String,
-        images: [String]
-    }]
-}, { timestamps: true });
+    roomTypes: mongoose.Schema.Types.Mixed,
+    floors: mongoose.Schema.Types.Mixed,
+    size: mongoose.Schema.Types.Mixed,
+    water: mongoose.Schema.Types.Mixed,
+    electric: mongoose.Schema.Types.Mixed
+}, { timestamps: true, strict: false });
 
 const Dorm = mongoose.model('Dorm', dormSchema);
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// Explicitly serve root and subfolders
-app.use(express.static(path.join(__dirname)));
-app.use('/js', express.static(path.join(__dirname, 'js')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Absolute paths for static files
+const rootDir = path.resolve(__dirname);
+app.use(express.static(rootDir));
+app.use('/js', express.static(path.join(rootDir, 'js')));
+app.use('/uploads', express.static(path.join(rootDir, 'uploads')));
 
-// ===== Page Routes =====
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/explorer', (req, res) => res.sendFile(path.join(__dirname, 'explorer.html')));
-app.get('/maps', (req, res) => res.sendFile(path.join(__dirname, 'maps.html')));
-app.get('/compare', (req, res) => res.sendFile(path.join(__dirname, 'compare.html')));
+// ===== Page Routes (Using Absolute Paths) =====
+app.get('/', (req, res) => res.sendFile(path.join(rootDir, 'index.html')));
+app.get('/explorer', (req, res) => res.sendFile(path.join(rootDir, 'explorer.html')));
+app.get('/maps', (req, res) => res.sendFile(path.join(rootDir, 'maps.html')));
+app.get('/compare', (req, res) => res.sendFile(path.join(rootDir, 'compare.html')));
 
 // ===== API =====
 
