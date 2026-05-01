@@ -31,8 +31,11 @@ function initFullMap() {
         maxZoom: 18
     }).setView([TARGET_COORDS.lat, TARGET_COORDS.lng], 15);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO'
+    // Use Google Maps Roadmap tiles for best road accuracy
+    L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
     }).addTo(map);
 
     // University Marker (Center Point)

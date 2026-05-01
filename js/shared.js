@@ -692,8 +692,11 @@ function initRegisterMap() {
     }
 
     registerMap = L.map('registerMap').setView(initialPos, 15);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap'
+    // Use Google Maps Tiles for registration map too
+    L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
     }).addTo(registerMap);
 
     registerMarker = L.marker(initialPos, { draggable: true }).addTo(registerMap);
