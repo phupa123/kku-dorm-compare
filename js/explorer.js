@@ -227,14 +227,18 @@ function showDetail(id) {
                         </div>
 
                         <!-- Property Info Grid -->
-                        <div class="property-meta-grid" style="margin-top:2.5rem">
+                        <div class="property-meta-grid" style="margin-top:2.5rem;display:grid;grid-template-columns:repeat(3, 1fr);gap:1.5rem">
                             <div class="meta-item">
                                 <span class="meta-label">เงินมัดจำ/ประกัน</span>
-                                <span class="meta-value">${formatRange(dorm.depositMin || dorm.deposit, dorm.depositMax)}</span>
+                                <span class="meta-value">${formatRange(dorm.depositMin || dorm.deposit, dorm.depositMax) || 'N/A'}</span>
                             </div>
                             <div class="meta-item">
-                                <span class="meta-label">มอเตอร์ไซค์ (มข.)</span>
-                                <span class="meta-value">~${Math.ceil((dist * 1.3 / 25) * 60)} นาที</span>
+                                <span class="meta-label">ค่าน้ำ (หน่วย/เหมา)</span>
+                                <span class="meta-value">${dorm.water || 'N/A'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">ค่าไฟ (ต่อหน่วย)</span>
+                                <span class="meta-value">${dorm.electric ? `${dorm.electric} ฿` : 'N/A'}</span>
                             </div>
                             <div class="meta-item">
                                 <span class="meta-label">ระยะทาง (มข.)</span>
@@ -243,6 +247,10 @@ function showDetail(id) {
                             <div class="meta-item">
                                 <span class="meta-label">ขนาดห้อง</span>
                                 <span class="meta-value">${dorm.size ? `${dorm.size} ตร.ม.` : 'N/A'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">จำนวนชั้น</span>
+                                <span class="meta-value">${dorm.floors || 'N/A'} ชั้น</span>
                             </div>
                         </div>
                     </section>
@@ -256,16 +264,24 @@ function showDetail(id) {
                                 </div>
                                 <div style="background:white;border-radius:1.5rem;border:1px solid var(--neutral-100);overflow:hidden;margin-bottom:1.5rem">
                                     <div style="display:flex;padding:1.25rem;border-bottom:1px solid var(--neutral-50);justify-content:space-between;font-size:14px">
-                                        <span style="color:var(--neutral-400);font-weight:700">จำนวนชั้น</span>
+                                        <span style="color:var(--neutral-400);font-weight:700">จำนวนชั้นทั้งหมด</span>
                                         <span style="font-weight:900;color:var(--neutral-900)">${dorm.floors || 'N/A'} ชั้น</span>
                                     </div>
                                     <div style="display:flex;padding:1.25rem;border-bottom:1px solid var(--neutral-50);justify-content:space-between;font-size:14px">
-                                        <span style="color:var(--neutral-400);font-weight:700">โซนที่พัก</span>
-                                        <span style="font-weight:900;color:var(--neutral-900)">${dorm.zone}</span>
+                                        <span style="color:var(--neutral-400);font-weight:700">ค่ามัดจำ (เริ่มต้น)</span>
+                                        <span style="font-weight:900;color:var(--brand-500)">฿${dorm.depositMin || dorm.deposit || 'N/A'}</span>
+                                    </div>
+                                    <div style="display:flex;padding:1.25rem;border-bottom:1px solid var(--neutral-50);justify-content:space-between;font-size:14px">
+                                        <span style="color:var(--neutral-400);font-weight:700">ค่าน้ำ</span>
+                                        <span style="font-weight:900;color:var(--neutral-900)">${dorm.water || 'N/A'}</span>
+                                    </div>
+                                    <div style="display:flex;padding:1.25rem;border-bottom:1px solid var(--neutral-50);justify-content:space-between;font-size:14px">
+                                        <span style="color:var(--neutral-400);font-weight:700">ค่าไฟ</span>
+                                        <span style="font-weight:900;color:var(--neutral-900)">${dorm.electric ? `${dorm.electric} บาท/หน่วย` : 'N/A'}</span>
                                     </div>
                                     <div style="display:flex;padding:1.25rem;justify-content:space-between;font-size:14px">
-                                        <span style="color:var(--neutral-400);font-weight:700">ระยะทางจาก มข.</span>
-                                        <span style="font-weight:900;color:var(--neutral-900)">${dist.toFixed(2)} กม.</span>
+                                        <span style="color:var(--neutral-400);font-weight:700">ขนาดห้องเฉลี่ย</span>
+                                        <span style="font-weight:900;color:var(--neutral-900)">${dorm.size ? `${dorm.size} ตร.ม.` : 'N/A'}</span>
                                     </div>
                                 </div>
 
