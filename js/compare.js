@@ -178,16 +178,21 @@ function renderTable() {
     const body = document.getElementById('sheetBody');
     const countEl = document.getElementById('compareCount');
     
-    // 1. Filter by hidden AND zone
+    // 1. Filter by hidden, zone, and favorites
     const mainZones = ['หลังมอ', 'กังสดาล', 'โคลัมโบ'];
-    let filtered = allDorms.filter(d => !hiddenDorms.has(d.id));
-    
-    if (currentZone !== 'all') {
-        filtered = filtered.filter(d => {
+    const showFavs = document.getElementById('filterFavorites')?.checked;
+    const favorites = JSON.parse(localStorage.getItem('elite_favorites') || '[]');
+
+    let filtered = allDorms.filter(d => {
+        if (hiddenDorms.has(d.id)) return false;
+        if (showFavs && !favorites.includes(d.id)) return false;
+        
+        if (currentZone !== 'all') {
             if (currentZone === 'อื่นๆ') return !mainZones.includes(d.zone);
             return d.zone === currentZone;
-        });
-    }
+        }
+        return true;
+    });
 
     // 2. Sort
     let sorted = [...filtered];
@@ -223,13 +228,18 @@ function renderTable() {
     body.innerHTML = sorted.map(dorm => {
         const dist = calcDistance(dorm.coords.lat, dorm.coords.lng);
         const features = dorm.features || [];
+        const isFav = favorites.includes(dorm.id);
+        
         return `
             <tr>
                 <td style="text-align:left;padding-left:2rem;position:sticky;left:0;background:white;z-index:10;border-right:1px solid var(--neutral-50)">
                     <div style="display:flex;align-items:center;gap:0.75rem">
                         <img src="${dorm.images?.[0] || ''}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;background:var(--neutral-100);border:1px solid var(--neutral-100)" onerror="this.src='/kku_dorm_elite_logo_1777569958199.png'">
                         <div style="line-height:1.2">
-                            <p style="font-weight:900;letter-spacing:-0.02em;font-size:0.9rem;color:var(--neutral-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${dorm.name}</p>
+                            <p style="font-weight:900;letter-spacing:-0.02em;font-size:0.9rem;color:var(--neutral-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">
+                                ${isFav ? '<i class="fas fa-heart" style="color:#ef4444;margin-right:0.4rem;font-size:0.8rem"></i>' : ''}
+                                ${dorm.name}
+                            </p>
                             <p style="font-size:9px;font-weight:800;color:var(--neutral-400);text-transform:uppercase">${dorm.zone}</p>
                         </div>
                     </div>
@@ -265,17 +275,34 @@ function renderTable() {
                 </td>
                 <td>
                     <div style="display:flex;gap:0.4rem;justify-content:center">
-                        <a href="/explorer?id=${dorm.id}" style="width:32px;height:32px;background:var(--neutral-900);color:white;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"><i class="fas fa-expand" style="font-size:10px"></i></a>
+                        <button id="fav-${dorm.id}" onclick="toggleFavorite('${dorm.id}', (added) => {
+                            document.getElementById('fav-${dorm.id}').style.color = added ? '#ef4444' : 'var(--neutral-400)';
+                            document.getElementById('fav-${dorm.id}').style.background = added ? 'var(--brand-50)' : 'var(--neutral-50)';
+                            showToast(added ? 'เพิ่มในรายการโปรดแล้ว' : 'ลบออกจากรายการโปรดแล้ว', added ? 'success' : 'info');
+                        })" style="width:32px;height:32px;background:${isFav ? 'var(--brand-50)' : 'var(--neutral-50)'};color:${isFav ? '#ef4444' : 'var(--neutral-400)'};border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+                            <i class="fas fa-heart" style="font-size:12px"></i>
+                        </button>
+                        <a href="/explorer?id=${dorm.id}" style="width:32px;height:32px;background:var(--neutral-900);color:white;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none" title="ดูรายละเอียด"><i class="fas fa-expand" style="font-size:10px"></i></a>
                         <button onclick="quickHide('${dorm.id}')" style="width:32px;height:32px;background:var(--neutral-50);color:var(--neutral-400);border:none;border-radius:8px;cursor:pointer" title="ซ่อนชั่วคราว"><i class="fas fa-eye-slash" style="font-size:10px"></i></button>
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
-
+    
     updateColVis();
-    Nav.init('compare');
 }
+
+// Global Favorite Sync
+window.addEventListener('favoritesUpdated', (e) => {
+    const { id, isAdded } = e.detail;
+    const btn = document.getElementById(`fav-${id}`);
+    if (btn) {
+        btn.style.color = isAdded ? '#ef4444' : 'var(--neutral-400)';
+        btn.style.background = isAdded ? 'var(--brand-50)' : 'var(--neutral-50)';
+        gsap.fromTo(btn, { scale: 0.8 }, { scale: 1.2, duration: 0.2, yoyo: true, repeat: 1, ease: 'back.out' });
+    }
+});
 
 document.addEventListener('click', (e) => {
     const menu = document.getElementById('columnMenu');

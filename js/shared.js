@@ -202,14 +202,40 @@ function getNavHTML(activePage) {
 // ===== Helpers =====
 function formatRange(min, max, prefix = '฿') {
     if (!min && !max) return 'N/A';
-    if (!max || min === max) return `${prefix}${min || max}`;
-    if (!min) return `${prefix}${max}`;
-    return `${prefix}${min} - ${max}`;
+    const f = (n) => Number(n).toLocaleString();
+    if (!max || min === max) return `${prefix}${f(min || max)}`;
+    if (!min) return `${prefix}${f(max)}`;
+    return `${prefix}${f(min)} - ${f(max)}`;
 }
 
 function toggleCustomZone(val) {
     const container = document.getElementById('customZoneContainer');
     if (container) container.style.display = (val === 'อื่นๆ') ? 'block' : 'none';
+}
+
+function formatCurrencyInput(el) {
+    let val = el.value.replace(/,/g, '');
+    if (!isNaN(val) && val !== '') {
+        el.value = Number(val).toLocaleString();
+    }
+}
+
+function toggleFavorite(id, callback) {
+    let favorites = JSON.parse(localStorage.getItem('elite_favorites') || '[]');
+    const index = favorites.indexOf(id);
+    let isAdded = false;
+    if (index > -1) {
+        favorites.splice(index, 1);
+        isAdded = false;
+    } else {
+        favorites.push(id);
+        isAdded = true;
+    }
+    localStorage.setItem('elite_favorites', JSON.stringify(favorites));
+    if (callback) callback(isAdded);
+    
+    // Broadcast update for other components
+    window.dispatchEvent(new CustomEvent('favoritesUpdated', { detail: { id, isAdded, favorites } }));
 }
 
 // ===== Shared Modal HTML =====
@@ -971,24 +997,34 @@ function viewFullImage(images, index = 0) {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'imageGalleryOverlay';
-        overlay.className = 'image-preview-overlay'; // Use class for base styles
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.95);display:none;backdrop-filter:blur(20px);';
+        overlay.className = 'image-preview-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.95);display:none;backdrop-filter:blur(20px);flex-direction:column;';
+        
         overlay.innerHTML = `
             <button onclick="closeFullImage()" style="position:absolute;top:2rem;right:2rem;z-index:10001;background:white;border:none;width:50px;height:50px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,0.3);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                 <i class="fas fa-times" style="color:var(--neutral-500)"></i>
             </button>
-            <div class="swiper swiper-gallery" style="width:100%;height:100%">
-                <div class="swiper-wrapper"></div>
-                <div class="swiper-pagination" style="color:white;font-weight:900"></div>
-                <div class="swiper-button-next" style="color:white"></div>
-                <div class="swiper-button-prev" style="color:white"></div>
+            <div style="flex:1;min-height:0;position:relative">
+                <div class="swiper swiper-gallery" style="width:100%;height:100%">
+                    <div class="swiper-wrapper"></div>
+                    <div class="swiper-pagination" style="color:white;font-weight:900;top:20px;bottom:auto"></div>
+                    <div class="swiper-button-next" style="color:white"></div>
+                    <div class="swiper-button-prev" style="color:white"></div>
+                </div>
+            </div>
+            <div style="height:120px;background:rgba(0,0,0,0.5);padding:10px 0">
+                <div class="swiper swiper-gallery-thumbs" style="width:100%;height:100%">
+                    <div class="swiper-wrapper"></div>
+                </div>
             </div>
         `;
         document.body.appendChild(overlay);
     }
 
-    const wrapper = overlay.querySelector('.swiper-wrapper');
-    wrapper.innerHTML = imgList.map(img => `
+    const mainWrapper = overlay.querySelector('.swiper-gallery .swiper-wrapper');
+    const thumbWrapper = overlay.querySelector('.swiper-gallery-thumbs .swiper-wrapper');
+    
+    const slidesHTML = imgList.map(img => `
         <div class="swiper-slide" style="display:flex;align-items:center;justify-content:center;padding:2rem">
             <div class="swiper-zoom-container">
                 <img src="${img}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:1.5rem;box-shadow:0 30px 60px rgba(0,0,0,0.5)" onerror="this.src='/kku_dorm_elite_logo_1777569958199.png'">
@@ -996,15 +1032,52 @@ function viewFullImage(images, index = 0) {
         </div>
     `).join('');
 
-    overlay.style.display = 'block';
-    if (window._gallerySwiper) window._gallerySwiper.destroy();
+    const thumbsHTML = imgList.map(img => `
+        <div class="swiper-slide" style="width:100px;height:100px;opacity:0.4;cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid transparent;transition:all 0.3s">
+            <img src="${img}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='/kku_dorm_elite_logo_1777569958199.png'">
+        </div>
+    `).join('');
+
+    mainWrapper.innerHTML = slidesHTML;
+    thumbWrapper.innerHTML = thumbsHTML;
+
+    overlay.style.display = 'flex';
+    
+    if (window._gallerySwiper) window._gallerySwiper.destroy(true, true);
+    if (window._galleryThumbsSwiper) window._galleryThumbsSwiper.destroy(true, true);
+
+    window._galleryThumbsSwiper = new Swiper('.swiper-gallery-thumbs', {
+        spaceBetween: 10,
+        slidesPerView: 'auto',
+        freeMode: true,
+        watchSlidesProgress: true,
+        centerInsufficientSlides: true
+    });
+
     window._gallerySwiper = new Swiper('.swiper-gallery', {
         initialSlide: index,
-        zoom: true, // Enable zooming on desktop
+        zoom: true,
         navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
         pagination: { el: '.swiper-pagination', type: 'fraction' },
         keyboard: true,
-        grabCursor: true
+        grabCursor: true,
+        thumbs: { swiper: window._galleryThumbsSwiper },
+        on: {
+            slideChange: function () {
+                const slides = thumbWrapper.querySelectorAll('.swiper-slide');
+                slides.forEach((s, i) => {
+                    s.style.opacity = i === this.activeIndex ? '1' : '0.4';
+                    s.style.borderColor = i === this.activeIndex ? 'var(--brand-500)' : 'transparent';
+                });
+            },
+            init: function () {
+                const slides = thumbWrapper.querySelectorAll('.swiper-slide');
+                if(slides[this.activeIndex]) {
+                    slides[this.activeIndex].style.opacity = '1';
+                    slides[this.activeIndex].style.borderColor = 'var(--brand-500)';
+                }
+            }
+        }
     });
 
     gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.4 });
@@ -1019,12 +1092,18 @@ function closeFullImage() {
         onComplete: () => {
             overlay.style.display = 'none';
             if (window._gallerySwiper) {
-                window._gallerySwiper.destroy();
+                window._gallerySwiper.destroy(true, true);
                 window._gallerySwiper = null;
+            }
+            if (window._galleryThumbsSwiper) {
+                window._galleryThumbsSwiper.destroy(true, true);
+                window._galleryThumbsSwiper = null;
             }
         }
     });
 }
+
+
 
 async function deleteDorm(id) {
     if (!id || !confirm('ยืนยันการลบหอพักนี้ใช่หรือไม่? ข้อมูลทั้งหมดรวมถึงรูปภาพจะถูกลบทิ้งถาวร')) return;

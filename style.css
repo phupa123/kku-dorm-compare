@@ -8,16 +8,16 @@
     --brand-50: #fff1f2;
     --brand-100: #ffe4e6;
     --brand-500: #f43f5e; /* Vibrant Premium Rose */
-    --brand-600: #e11d48;
-    --brand-900: #881337;
-    --accent-gold: #fbbf24;
-    --neutral-50: #fcfcfc;
-    --neutral-100: #f4f4f5;
-    --neutral-200: #e4e4e7;
-    --neutral-300: #d4d4d8;
-    --neutral-400: #a1a1aa;
-    --neutral-800: #27272a;
-    --neutral-900: #09090b;
+    --neutral-50: #faf9f6;
+    --neutral-100: #f4f2ee;
+    --neutral-200: #e8e4de;
+    --neutral-300: #d1cbc1;
+    --neutral-400: #a39b8f;
+    --neutral-500: #736b5f;
+    --neutral-600: #524c43;
+    --neutral-700: #403b34;
+    --neutral-800: #26231f;
+    --neutral-900: #12110f;
     --glass: rgba(255, 255, 255, 0.7);
     --glass-border: rgba(255, 255, 255, 0.4);
     --radius-card: 2rem;
@@ -90,11 +90,14 @@ img:not([src]), img[src=""], img[src="null"] {
     background: var(--glass);
     backdrop-filter: blur(24px) saturate(180%);
     border-bottom: 1px solid var(--glass-border);
-    padding: 1rem 4rem;
+    padding: 1rem 2rem;
     display: flex; justify-content: space-between; align-items: center;
     opacity: 0; transform: translateY(-20px);
     transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+#fullMap { width: 100%; height: 100%; z-index: 1; filter: sepia(12%) contrast(95%) brightness(97%); }
+
 .glass-nav.visible { opacity: 1; transform: translateY(0); }
 .glass-nav .nav-links { display: flex; gap: 3.5rem; align-items: center; }
 .glass-nav .nav-link {
