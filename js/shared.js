@@ -367,10 +367,19 @@ function getModalHTML() {
                         <label style="font-size:9px;font-weight:900;text-transform:uppercase;color:var(--neutral-400);margin-left:12px">ราคา (Max)</label>
                         <input type="number" id="dormPriceMax" placeholder="3000" min="0" inputmode="numeric" class="form-input">
                     </div>
-                    <div>
+                    <div style="position:relative">
                         <label style="font-size:9px;font-weight:900;text-transform:uppercase;color:var(--neutral-400);margin-left:12px">พิกัด (Lat, Lng)</label>
-                        <input type="text" id="dormCoords" placeholder="16.47, 102.82" required class="form-input">
+                        <div style="display:flex;gap:0.5rem">
+                            <input type="text" id="dormCoords" placeholder="วางลิงก์ Google Maps หรือจิ้มแผนที่" required class="form-input" style="flex:1" oninput="handleSmartCoordsPaste(this.value)">
+                            <button type="button" onclick="toggleMapPicker()" style="width:40px;height:40px;border-radius:12px;border:none;background:var(--brand-100);color:var(--brand-600);cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="fas fa-location-dot"></i></button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Map Picker Container -->
+                <div id="mapPickerContainer" style="display:none;margin-bottom:1rem">
+                    <div id="registerMap" style="height:200px;border-radius:1.5rem;border:1px solid var(--neutral-200);overflow:hidden"></div>
+                    <p style="font-size:9px;color:var(--neutral-400);margin-top:0.5rem;text-align:center"><i class="fas fa-info-circle"></i> คลิกบนแผนที่เพื่อเลือกตำแหน่งหอพัก</p>
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
@@ -471,6 +480,15 @@ function openDormModal() {
     const deleteBtn = document.getElementById('deleteDormBtn');
     if (deleteBtn) deleteBtn.style.display = 'none';
 
+    // Reset Map Picker
+    const mapContainer = document.getElementById('mapPickerContainer');
+    if (mapContainer) mapContainer.style.display = 'none';
+    if (registerMap) {
+        registerMap.remove();
+        registerMap = null;
+        registerMarker = null;
+    }
+
     const modal = document.getElementById('dormModal');
     const modalBody = modal.querySelector('.modal-body');
     modal.classList.add('open');
@@ -566,6 +584,92 @@ function renderEditData(dorm) {
     // Render room types
     document.getElementById('roomTypesList').innerHTML = '';
     if (dorm.roomTypes) dorm.roomTypes.forEach(rt => addRoomTypeRow(rt.type, rt.price, rt.images || rt.image, rt.status));
+}
+
+// ===== Smart Map Picker & Link Parsing =====
+let registerMap = null;
+let registerMarker = null;
+
+function handleSmartCoordsPaste(value) {
+    if (!value) return;
+    
+    // Regular expression to find coordinates in Google Maps URLs
+    const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)|q=(-?\d+\.\d+),(-?\d+\.\d+)|ll=(-?\d+\.\d+),(-?\d+\.\d+)/;
+    const match = value.match(regex);
+    
+    if (match) {
+        let lat, lng;
+        for (let i = 1; i < match.length; i += 2) {
+            if (match[i] && match[i+1]) {
+                lat = match[i];
+                lng = match[i+1];
+                break;
+            }
+        }
+        
+        if (lat && lng) {
+            const coordsStr = `${lat}, ${lng}`;
+            document.getElementById('dormCoords').value = coordsStr;
+            showToast('ดึงพิกัดจากลิงก์เรียบร้อย!', 'success');
+            
+            if (registerMap) {
+                const pos = [parseFloat(lat), parseFloat(lng)];
+                updateRegisterMarker(pos);
+                registerMap.setView(pos, 16);
+            }
+        }
+    }
+}
+
+function toggleMapPicker() {
+    const container = document.getElementById('mapPickerContainer');
+    const isVisible = container.style.display === 'block';
+    
+    if (isVisible) {
+        container.style.display = 'none';
+    } else {
+        container.style.display = 'block';
+        initRegisterMap();
+    }
+}
+
+function initRegisterMap() {
+    if (registerMap) return;
+
+    let initialPos = [16.4831, 102.8227];
+    const currentCoords = document.getElementById('dormCoords').value;
+    if (currentCoords && currentCoords.includes(',')) {
+        const parts = currentCoords.split(',').map(p => parseFloat(p.trim()));
+        if (!isNaN(parts[0]) && !isNaN(parts[1])) {
+            initialPos = [parts[0], parts[1]];
+        }
+    }
+
+    registerMap = L.map('registerMap').setView(initialPos, 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(registerMap);
+
+    registerMarker = L.marker(initialPos, { draggable: true }).addTo(registerMap);
+
+    registerMap.on('click', function(e) {
+        updateRegisterMarker([e.latlng.lat, e.latlng.lng]);
+    });
+
+    registerMarker.on('dragend', function(e) {
+        const pos = e.target.getLatLng();
+        updateRegisterMarker([pos.lat, pos.lng]);
+    });
+
+    setTimeout(() => {
+        registerMap.invalidateSize();
+    }, 100);
+}
+
+function updateRegisterMarker(pos) {
+    if (!registerMarker) return;
+    registerMarker.setLatLng(pos);
+    document.getElementById('dormCoords').value = `${pos[0].toFixed(6)}, ${pos[1].toFixed(6)}`;
 }
 
 function addRoomTypeRow(type = '', price = '', images = [], status = 'ว่าง') {
