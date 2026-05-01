@@ -462,7 +462,7 @@ function closeDetail() {
         url.searchParams.delete('id');
         window.history.pushState({}, '', url);
         
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // window.scrollTo({ top: 0, behavior: 'smooth' }); // REMOVED: Stop jumping to top
     }});
 }
 

@@ -22,7 +22,22 @@ async function loadDorms() {
     allDorms = await fetchDorms();
     renderDormToggles();
     renderTable();
+    
+    // Restore scroll position after rendering
+    const savedPos = sessionStorage.getItem('compareScrollPos');
+    if (savedPos) {
+        window.scrollTo({
+            top: parseInt(savedPos),
+            behavior: 'instant'
+        });
+        sessionStorage.removeItem('compareScrollPos'); // Use once then clear
+    }
 }
+
+// Save scroll position when navigating away or clicking a link
+window.addEventListener('beforeunload', () => {
+    sessionStorage.setItem('compareScrollPos', window.scrollY);
+});
 
 function renderDormToggles() {
     const container = document.getElementById('dormToggles');
