@@ -382,38 +382,45 @@ function showDetail(id) {
     setTimeout(() => {
         const dm = L.map('detailMap', { 
             zoomControl: true,
-            scrollWheelZoom: true, // Enabled for desktop
+            scrollWheelZoom: true,
             touchZoom: true
-        }).setView([dorm.coords.lat, dorm.coords.lng], 15);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(dm);
+        }).setView([dorm.coords.lat, dorm.coords.lng], 16);
         
-        // Add University Marker (Premium Circle)
+        // Use Google Maps Tiles for detail view
+        L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '&copy; Google Maps'
+        }).addTo(dm);
+        
+        // University Marker
         const uniIcon = L.divIcon({ 
-            html: '<div style="width:36px;height:36px;background:var(--brand-500);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 10px 20px rgba(255, 45, 85, 0.2);"><i class="fas fa-graduation-cap"></i></div>', 
+            html: '<div style="width:40px;height:40px;background:var(--brand-500);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;border:4px solid white;box-shadow:0 10px 20px rgba(255, 45, 85, 0.2);"><i class="fas fa-graduation-cap"></i></div>', 
             className: '', 
-            iconSize: [36, 36] 
+            iconSize: [40, 40] 
         });
         L.marker([TARGET_COORDS.lat, TARGET_COORDS.lng], { icon: uniIcon }).addTo(dm).bindPopup('มหาวิทยาลัยขอนแก่น');
 
-        // Draw Route safely using Native Polyline instead of Plugin
+        // Dorm Marker
+        const dormIcon = L.divIcon({ 
+            html: '<div style="width:36px;height:36px;background:var(--neutral-900);color:white;border-radius:12px;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 8px 20px rgba(0,0,0,0.2);"><i class="fas fa-house"></i></div>', 
+            className: '', 
+            iconSize: [36, 36] 
+        });
+        
+        const dormMarker = L.marker([dorm.coords.lat, dorm.coords.lng], { icon: dormIcon }).addTo(dm);
+        
+        // Route Line
         const routeLine = L.polyline([
             [dorm.coords.lat, dorm.coords.lng],
             [TARGET_COORDS.lat, TARGET_COORDS.lng]
         ], {
-            color: '#3b82f6',
-            weight: 5,
-            opacity: 0.8,
-            dashArray: '10, 15',
-            lineJoin: 'round'
+            color: 'var(--brand-500)',
+            weight: 4,
+            opacity: 0.6,
+            dashArray: '10, 15'
         }).addTo(dm);
 
-        const dormIcon = L.divIcon({ 
-            html: '<div style="width:32px;height:32px;background:var(--neutral-900);color:white;border-radius:10px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 8px 15px rgba(0,0,0,0.2);"><i class="fas fa-house"></i></div>', 
-            className: '', 
-            iconSize: [32, 32] 
-        });
-        
-        const dormMarker = L.marker([dorm.coords.lat, dorm.coords.lng], { icon: dormIcon }).addTo(dm);
         dormMarker.bindPopup(`
             <div style="font-family:Sarabun;padding:5px">
                 <h4 style="margin:0;font-weight:900">${dorm.name}</h4>
@@ -421,8 +428,11 @@ function showDetail(id) {
             </div>
         `).openPopup();
         
-        // Auto-zoom to fit both markers
+        // Fit both markers in view
         dm.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+        
+        // Final invalidate for safety
+        setTimeout(() => dm.invalidateSize(), 200);
     }, 500);
 }
 
