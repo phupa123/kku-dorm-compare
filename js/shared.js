@@ -569,9 +569,11 @@ function renderEditData(dorm) {
     document.getElementById('dormCoords').value = `${dorm.coords.lat}, ${dorm.coords.lng}`;
     
     document.getElementById('dormFloors').value = dorm.floors || '';
+    document.getElementById('dormWater').value = dorm.water || '';
+    document.getElementById('dormElectric').value = dorm.electric || '';
+    document.getElementById('dormSize').value = dorm.size || '';
     document.getElementById('dormRef').value = dorm.reference || '';
     document.getElementById('dormDesc').value = dorm.description || '';
-    document.getElementById('dormSize').value = dorm.size || '';
 
     const contactInput = document.getElementById('dormContact');
     if (contactInput) contactInput.value = dorm.contact || '';
