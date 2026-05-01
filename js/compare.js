@@ -2,7 +2,7 @@
  * EliteDorm - Comparison Page Logic
  */
 let allDorms = [];
-let hiddenDorms = new Set();
+let hiddenDorms = new Set(JSON.parse(localStorage.getItem('elite_hidden') || '[]'));
 let sortStack = [];
 let currentZone = 'all';
 
@@ -40,6 +40,10 @@ window.addEventListener('beforeunload', () => {
     sessionStorage.setItem('compareScrollPos', window.scrollY);
 });
 
+function saveHidden() {
+    localStorage.setItem('elite_hidden', JSON.stringify(Array.from(hiddenDorms)));
+}
+
 function setFilter(zone) {
     currentZone = zone;
     document.querySelectorAll('.zone-btn').forEach(btn => {
@@ -68,14 +72,16 @@ function toggleDormVisibility(id) {
     } else {
         hiddenDorms.add(id);
     }
+    saveHidden();
     renderTable();
 }
 
 function quickHide(id) {
     hiddenDorms.add(id);
+    saveHidden();
     renderDormToggles(); // Keep menu in sync
     renderTable();
-    showToast('ซ่อนหอพักชั่วคราวแล้ว', 'info');
+    showToast('ซ่อนหอพักนี้จากทุกหน้าแล้ว', 'info');
 }
 
 function toggleDormMenu() {
@@ -139,6 +145,7 @@ function toggleZoom() {
 function resetTable() {
     sortStack = [];
     hiddenDorms.clear();
+    saveHidden();
     setFilter('all');
     const select = document.getElementById('compareSort');
     if (select) select.value = 'default';

@@ -4,6 +4,7 @@
 let allDorms = [];
 let currentZone = 'all';
 let favorites = JSON.parse(localStorage.getItem('elite_favorites') || '[]');
+let hiddenDorms = new Set(JSON.parse(localStorage.getItem('elite_hidden') || '[]'));
 
 function toggleFavorite(id) {
     const isFav = favorites.includes(id);
@@ -24,6 +25,13 @@ function toggleFavorite(id) {
     showToast(!isFav ? 'เพิ่มในรายการโปรดแล้ว' : 'ลบออกจากรายการโปรดแล้ว', !isFav ? 'success' : 'info');
 }
 
+function hideDorm(id) {
+    hiddenDorms.add(id);
+    localStorage.setItem('elite_hidden', JSON.stringify(Array.from(hiddenDorms)));
+    renderGrid();
+    showToast('ซ่อนหอพักนี้แล้ว (จัดการได้ในหน้า Comparison)', 'info');
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     Transition.init();
     Nav.init('explorer');
@@ -32,7 +40,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('searchInput')?.addEventListener('input', () => renderGrid());
 
-    LiveSync.init((data) => { allDorms = data; renderGrid(); });
+    LiveSync.init((data) => { 
+        allDorms = data; 
+        // Sync hidden state from localStorage in case it changed in another tab/page
+        hiddenDorms = new Set(JSON.parse(localStorage.getItem('elite_hidden') || '[]'));
+        renderGrid(); 
+    });
 });
 
 async function loadDorms() {
@@ -65,8 +78,14 @@ function renderGrid() {
     const showFavs = document.getElementById('filterFavorites')?.checked;
     const selectedFeatures = Array.from(document.querySelectorAll('#filterFeatures input:checked')).map(cb => cb.value);
 
+    // 1. Refresh hidden state from storage
+    hiddenDorms = new Set(JSON.parse(localStorage.getItem('elite_hidden') || '[]'));
+
     const mainZones = ['หลังมอ', 'กังสดาล', 'โคลัมโบ'];
     const filtered = allDorms.filter(d => {
+        // Exclude hidden dorms
+        if (hiddenDorms.has(d.id)) return false;
+
         let zoneOk = false;
         if (currentZone === 'all') zoneOk = true;
         else if (currentZone === 'อื่นๆ') zoneOk = !mainZones.includes(d.zone);
@@ -90,6 +109,8 @@ function renderGrid() {
         card.style.overflow = 'hidden';
         card.style.display = 'flex';
         card.style.flexDirection = 'column';
+        card.style.position = 'relative';
+
         const isFull = (dorm.roomTypes || []).length > 0 && dorm.roomTypes.every(rt => rt.status === 'เต็ม');
         const statusText = isFull ? 'เต็ม' : 'ว่าง';
         const statusColor = isFull ? '#ef4444' : '#10b981';
@@ -100,56 +121,56 @@ function renderGrid() {
                     <div class="swiper-wrapper">
                         ${imgs.map(img => `
                             <div class="swiper-slide">
-                                ${img ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.5s" class="hover-scale" onerror="this.src='/kku_dorm_elite_logo_1777569958199.png';this.style.objectFit='contain';this.parentElement.style.background='var(--neutral-900)'">` : `<div style="width:100%;height:100%;background:var(--neutral-100);display:flex;align-items:center;justify-content:center"><i class="fas fa-building" style="font-size:3rem;color:var(--neutral-400)"></i></div>`}
+                                ${img ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='/kku_dorm_elite_logo_1777569958199.png';this.style.objectFit='contain';this.parentElement.style.background='var(--neutral-900)'">` : `<div style="height:100%;display:flex;align-items:center;justify-content:center;background:var(--neutral-100);color:var(--neutral-300)"><i class="fas fa-image fa-3x"></i></div>`}
                             </div>
                         `).join('')}
                     </div>
-                    <div class="swiper-pagination swiper-pagination-${dorm.id}" style="--swiper-pagination-color:white;--swiper-pagination-bullet-inactive-color:rgba(255,255,255,0.5)"></div>
+                    <div class="swiper-pagination swiper-pagination-${dorm.id}"></div>
                 </div>
-                
-                <!-- Badges -->
-                <div style="position:absolute;top:1rem;left:1rem;z-index:20;display:flex;gap:0.4rem">
-                    <span style="background:rgba(255,255,255,0.95);color:var(--neutral-900);padding:0.4rem 0.8rem;border-radius:0.75rem;font-size:9px;font-weight:900;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,0.08);display:flex;align-items:center;gap:4px">
-                        <i class="fas fa-map-marker-alt" style="color:var(--brand-500)"></i> ${dorm.zone}
-                    </span>
-                    <span style="background:${statusColor};color:white;padding:0.4rem 0.8rem;border-radius:0.75rem;font-size:9px;font-weight:900;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
-                        ${statusText}
-                    </span>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div style="position:absolute;top:1rem;right:1rem;z-index:20;display:flex;gap:0.5rem">
-                    <button id="fav-${dorm.id}" onclick="event.stopPropagation();toggleFavorite('${dorm.id}')" style="width:34px;height:34px;background:rgba(255,255,255,0.95);border:none;border-radius:50%;cursor:pointer;color:${favorites.includes(dorm.id) ? '#ef4444' : 'var(--neutral-400)'};transition:all 0.3s;box-shadow:0 4px 12px rgba(0,0,0,0.08)">
-                        <i class="fas fa-heart"></i>
-                    </button>
-                    <button onclick="event.stopPropagation();openEditModal('${dorm.id}',allDorms)" style="width:34px;height:34px;background:rgba(255,255,255,0.95);border:none;border-radius:50%;cursor:pointer;color:var(--neutral-900);transition:all 0.3s;box-shadow:0 4px 12px rgba(0,0,0,0.08)" onmouseover="this.style.color='var(--brand-500)'" onmouseout="this.style.color='var(--neutral-900)'">
-                        <i class="fas fa-pen"></i>
-                    </button>
+                <div style="position:absolute;top:1rem;left:1rem;z-index:10;display:flex;gap:0.5rem">
+                    <div style="background:white;padding:0.4rem 1rem;border-radius:var(--radius-pill);font-size:9px;font-weight:900;color:var(--neutral-900);box-shadow:var(--shadow-soft);display:flex;align-items:center;gap:6px">
+                        <div style="width:6px;height:6px;border-radius:50%;background:${statusColor}"></div> ${statusText}
+                    </div>
                 </div>
             </div>
             
-            <div style="padding:1.5rem;flex:1;display:flex;flex-direction:column;cursor:pointer;background:white" onclick="showDetail('${dorm.id}')">
-                <div style="margin-bottom:0.75rem">
-                    <h3 style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:1.25rem;color:var(--neutral-900);line-height:1.3;letter-spacing:-0.02em;margin-bottom:0.4rem">${dorm.name}</h3>
-                    <span style="font-size:11px;font-weight:800;color:var(--neutral-400)"><i class="fas fa-location-arrow" style="color:var(--brand-500);margin-right:4px"></i>${dist.toFixed(1)} กม. จาก มข.</span>
-                </div>
+            <!-- Floating Actions -->
+            <div style="position:absolute;top:1rem;right:1rem;z-index:20;display:flex;flex-direction:column;gap:0.5rem">
+                <button id="fav-${dorm.id}" onclick="event.stopPropagation(); toggleFavorite('${dorm.id}')" style="width:36px;height:36px;border-radius:50%;background:white;border:none;box-shadow:var(--shadow-heavy);cursor:pointer;color:${favorites.includes(dorm.id) ? '#ef4444' : 'var(--neutral-400)'};transition:all 0.3s ease;display:flex;align-items:center;justify-content:center">
+                    <i class="fas fa-heart"></i>
+                </button>
+                <button onclick="event.stopPropagation(); hideDorm('${dorm.id}')" style="width:36px;height:36px;border-radius:50%;background:white;border:none;box-shadow:var(--shadow-heavy);cursor:pointer;color:var(--neutral-300);transition:all 0.3s ease;display:flex;align-items:center;justify-content:center" title="ซ่อนหอพักนี้">
+                    <i class="fas fa-eye-slash"></i>
+                </button>
+            </div>
 
-                <div style="margin-bottom:1.25rem">
-                    <div style="display:flex;align-items:baseline;gap:4px">
-                        <span style="font-size:1.5rem;font-weight:900;color:var(--brand-500);letter-spacing:-0.03em">${formatRange(dorm.priceMin || dorm.price, dorm.priceMax)}</span>
-                        <span style="font-size:10px;font-weight:800;color:var(--neutral-400);text-transform:uppercase">/ เดือน</span>
+            <div style="padding:1.5rem;flex:1;display:flex;flex-direction:column;cursor:pointer" onclick="showDetail('${dorm.id}')">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+                    <div>
+                        <h3 style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:-0.03em;color:var(--neutral-900);margin-bottom:4px">${dorm.name}</h3>
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <span style="font-size:10px;font-weight:800;color:var(--brand-500);text-transform:uppercase;letter-spacing:0.05em">${dorm.zone}</span>
+                            <span style="width:3px;height:3px;border-radius:50%;background:var(--neutral-200)"></span>
+                            <span style="font-size:11px;font-weight:700;color:var(--neutral-400)"><i class="fas fa-location-arrow" style="font-size:9px"></i> ${dist.toFixed(2)} km</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right">
+                        <p style="font-size:9px;font-weight:900;color:var(--neutral-400);text-transform:uppercase;margin-bottom:2px">เริ่มต้นที่</p>
+                        <p style="font-size:1.5rem;font-weight:900;color:var(--brand-500);letter-spacing:-0.03em">฿${dorm.priceMin || dorm.price}</p>
                     </div>
                 </div>
                 
-                <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:auto">
-                    ${(dorm.features || []).map(f => `
-                        <span style="padding:0.4rem 0.6rem;background:var(--neutral-50);font-size:9px;font-weight:800;border-radius:0.6rem;color:var(--neutral-500);border:1px solid var(--neutral-100);display:flex;align-items:center;gap:4px">
-                            <i class="fas ${getIconForFeature(f)}" style="font-size:8px;color:var(--brand-500)"></i>
-                            ${f}
-                        </span>
+                <div style="display:flex;gap:0.5rem;margin-top:auto;padding-top:1rem;border-top:1px solid var(--neutral-50)">
+                    ${(dorm.features || []).slice(0, 4).map(f => `
+                        <div style="width:32px;height:32px;border-radius:10px;background:var(--neutral-50);color:var(--neutral-500);display:flex;align-items:center;justify-content:center;font-size:11px" title="${f}">
+                            <i class="fas ${getIconForFeature(f)}"></i>
+                        </div>
                     `).join('')}
-                </div>
-            </div>
+                    ${(dorm.features || []).length > 4 ? `
+                        <div style="width:32px;height:32px;border-radius:10px;background:var(--neutral-50);color:var(--neutral-400);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">
+                            +${dorm.features.length - 4}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -298,38 +319,21 @@ function showDetail(id) {
                                         <div class="room-card" style="background:white;border-radius:1.5rem;overflow:hidden;border:1px solid var(--neutral-100);box-shadow:0 10px 30px rgba(0,0,0,0.03);transition:transform 0.3s ease" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
                                             <div style="position:relative;height:180px;background:var(--neutral-50);cursor:pointer" onclick='viewFullImage(${JSON.stringify(rtImages)})'>
                                                 <img src="${mainImg}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='/kku_dorm_elite_logo_1777569958199.png';this.style.objectFit='contain'">
-                                                <div style="position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:white;padding:0.4rem 0.8rem;border-radius:2rem;font-size:9px;font-weight:900;backdrop-filter:blur(4px)">กดดูรูปภาพ (${rtImages.length})</div>
-                                            </div>
-                                            <div style="padding:1.5rem">
-                                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                                                    <h5 style="font-size:1.1rem;font-weight:900;color:var(--neutral-800)">${rt.type}</h5>
-                                                    <span style="background:${rt.status === 'เต็ม' ? '#fee2e2' : '#dcfce7'};color:${rt.status === 'เต็ม' ? '#ef4444' : '#059669'};padding:0.3rem 0.7rem;border-radius:2rem;font-size:9px;font-weight:900">ห้อง${rt.status}</span>
-                                                </div>
-                                                <div style="display:flex;justify-content:space-between;align-items:flex-end">
-                                                    <div>
-                                                        <p style="font-size:9px;font-weight:900;color:var(--neutral-400);text-transform:uppercase;margin-bottom:0.2rem">ราคาค่าเช่า</p>
-                                                        <p style="font-size:1.4rem;font-weight:900;color:var(--brand-500)">฿${rt.price}</p>
-                                                    </div>
-                                                    <button class="btn-ghost" style="padding:0.6rem 1rem;font-size:9px;border-radius:1rem" onclick='viewFullImage(${JSON.stringify(rtImages)})'>ดูรายละเอียด</button>
+                                                <div style="position:absolute;bottom:0;left:0;right:0;padding:1rem;background:linear-gradient(transparent, rgba(0,0,0,0.4));color:white">
+                                                    <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em">${rt.status || 'ว่าง'}</span>
                                                 </div>
                                             </div>
-                                        </div>`;
-                                    }).join('') || '<div style="grid-column:1/-1;padding:4rem;text-align:center;color:var(--neutral-300);background:white;border-radius:1.5rem;border:1px dashed var(--neutral-100)">ไม่มีข้อมูลราคาแยกประเภท</div>'}
-                                </div>
-                            </section>
-
-                            <section class="detail-section">
-                                <div class="section-header" style="margin-bottom:1.5rem">
-                                    <div class="accent-bar" style="background:var(--brand-500);width:40px;height:4px;border-radius:2px;margin-bottom:0.75rem"></div>
-                                    <h4 class="section-title" style="font-size:1.5rem;font-weight:900;letter-spacing:-0.03em">สิ่งอำนวยความสะดวก</h4>
-                                </div>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
-                                    ${(dorm.features || []).map(f => `
-                                        <div class="facility-card">
-                                            <div class="facility-icon"><i class="fas ${getIconForFeature(f)}"></i></div>
-                                            <span style="font-weight:700;font-size:0.85rem">${f}</span>
+                                            <div style="padding:1.25rem">
+                                                <h5 style="font-weight:900;font-size:1.1rem;margin-bottom:0.25rem">${rt.name}</h5>
+                                                <p style="font-size:11px;font-weight:700;color:var(--neutral-400);margin-bottom:1rem">${rt.size || dorm.size || 'N/A'} ตร.ม.</p>
+                                                <div style="display:flex;justify-content:space-between;align-items:center">
+                                                    <span style="font-weight:900;color:var(--brand-500);font-size:1.25rem">฿${rt.price || dorm.price}</span>
+                                                    <button class="btn-ghost" style="padding:0.5rem 1rem;font-size:10px" onclick='viewFullImage(${JSON.stringify(rtImages)})'>ดูรูปเพิ่ม</button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    `).join('')}
+                                        `;
+                                    }).join('')}
                                 </div>
                             </section>
                         </div>
@@ -337,46 +341,46 @@ function showDetail(id) {
                         <div>
                             <section class="detail-section">
                                 <div class="section-header" style="margin-bottom:1.5rem">
-                                    <div class="accent-bar" style="background:var(--accent-gold);width:40px;height:4px;border-radius:2px;margin-bottom:0.75rem"></div>
-                                    <h4 class="section-title" style="font-size:1.5rem;font-weight:900;letter-spacing:-0.03em">แผนที่และพิกัด</h4>
+                                    <div class="accent-bar" style="background:var(--brand-500);width:40px;height:4px;border-radius:2px;margin-bottom:0.75rem"></div>
+                                    <h4 class="section-title" style="font-size:1.5rem;font-weight:900;letter-spacing:-0.03em">สิ่งอำนวยความสะดวก</h4>
                                 </div>
-                                <div id="detailMap" class="detail-map-box" style="height:350px;margin-bottom:1rem"></div>
-                                <a href="https://www.google.com/maps/dir/?api=1&destination=${dorm.coords.lat},${dorm.coords.lng}" target="_blank" class="btn-primary" style="width:100%;padding:1.1rem;justify-content:center;font-size:10px;border-radius:1.25rem">
-                                    <i class="fas fa-directions"></i> นำทางด้วย Google Maps
-                                </a>
+                                <div class="facilities-grid">
+                                    ${(dorm.features || []).map(f => `
+                                        <div class="facility-item">
+                                            <i class="fas ${getIconForFeature(f)}"></i>
+                                            <span>${f}</span>
+                                        </div>
+                                    `).join('')}
+                                    ${(dorm.features || []).length === 0 ? '<p style="color:var(--neutral-300);font-size:13px">ไม่มีข้อมูลสิ่งอำนวยความสะดวก</p>' : ''}
+                                </div>
+                            </section>
+
+                            <section class="detail-section" style="margin-top:3rem">
+                                <div class="section-header" style="margin-bottom:1.5rem">
+                                    <div class="accent-bar" style="background:var(--neutral-900);width:40px;height:4px;border-radius:2px;margin-bottom:0.75rem"></div>
+                                    <h4 class="section-title" style="font-size:1.5rem;font-weight:900;letter-spacing:-0.03em">ที่ตั้งและแผนที่</h4>
+                                </div>
+                                <div id="detailMap" class="detail-map-box"></div>
                             </section>
                         </div>
                     </div>
-
-                    <section class="detail-section" style="margin-top:2rem">
-                        <div class="section-header" style="margin-bottom:2rem;text-align:center">
-                            <h4 class="section-title" style="font-size:1.8rem;font-weight:900;letter-spacing:-0.03em">Gallery</h4>
-                            <p style="font-size:0.9rem;color:var(--neutral-400)">รูปภาพบรรยากาศภายในและภายนอกหอพัก</p>
-                        </div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:1rem">
-                            ${imgs.filter(img => img).map((img, idx) => `
-                                <div style="aspect-ratio:1.4;border-radius:1.5rem;overflow:hidden;cursor:zoom-in;box-shadow:var(--shadow-soft);border:4px solid white" onclick='viewFullImage(${JSON.stringify(imgs.filter(img => img))}, ${idx})'>
-                                    <img src="${img}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.5s" class="hover-scale" onerror="this.src='/kku_dorm_elite_logo_1777569958199.png';this.style.objectFit='contain';this.parentElement.style.background='var(--neutral-900)'">
-                                </div>
-                            `).join('') || '<p style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--neutral-300);font-weight:700">ไม่มีรูปภาพประกอบ</p>'}
-                        </div>
-                    </section>
                 </div>
             </div>
         </div>
-
         <style>
-            .detail-back-btn { position: fixed; top: 1.5rem; left: 1.5rem; z-index: 9100; width: 50px; height: 50px; background: white; border: none; border-radius: 16px; box-shadow: var(--shadow-heavy); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
-            .detail-back-btn:hover { background: var(--neutral-900); color: white; transform: translateX(-5px); }
-            .detail-hero { height: 50vh; width: 100%; position: relative; background: var(--neutral-100); overflow: hidden; }
-            .hero-img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
-            .hero-placeholder { width: 100%; height: 50vh; background: var(--neutral-100); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--neutral-300); gap: 1rem; }
-            .hero-placeholder i { font-size: 3rem; }
-            .hero-placeholder::after { content: 'ไม่มีรูปภาพประกอบ'; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
-            .detail-content-wrapper { max-width: 1000px; margin: -5rem auto 0; position: relative; z-index: 10; padding: 0 1.5rem 6rem; }
-            .detail-main { background: white; border-radius: 3rem; padding: 4rem; box-shadow: var(--shadow-heavy); }
-            .detail-section { margin-bottom: 4rem; }
-            .detail-title { font-family: 'Public Sans', sans-serif; font-weight: 900; font-size: 3rem; letter-spacing: -0.05em; color: var(--neutral-900); }
+            .detail-container { position:relative; overflow-x:hidden; }
+            .detail-back-btn { position:fixed; top:2rem; left:2rem; width:50px; height:50px; border-radius:50%; background:white; color:var(--neutral-900); border:none; box-shadow:var(--shadow-heavy); z-index:100; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2rem; transition:all 0.3s; }
+            .detail-back-btn:hover { transform:scale(1.1); background:var(--neutral-900); color:white; }
+            .detail-hero { height:60vh; background:var(--neutral-100); }
+            .hero-img { width:100%; height:100%; object-fit:cover; cursor:zoom-in; }
+            .hero-placeholder { height:100%; display:flex; align-items:center; justify-content:center; color:var(--neutral-300); font-size:4rem; }
+            .detail-content-wrapper { max-width:85rem; margin:-5rem auto 0; position:relative; z-index:10; padding:0 2rem 5rem; }
+            .detail-main { background:white; border-radius:3rem; padding:4rem; box-shadow:var(--shadow-heavy); border:1px solid var(--neutral-100); }
+            .detail-breadcrumb { display:flex; align-items:center; font-size:11px; font-weight:900; color:var(--neutral-400); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2.5rem; }
+            .detail-title { font-family:'Public Sans',sans-serif; font-weight:900; font-size:3.5rem; letter-spacing:-0.05em; color:var(--neutral-900); }
+            .meta-label { font-size:9px; font-weight:900; color:var(--neutral-400); text-transform:uppercase; display:block; margin-bottom:6px; }
+            .meta-value { font-size:1.1rem; font-weight:800; color:var(--neutral-900); }
+            .detail-price-label { font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.5rem; }
             .detail-price-value { font-weight: 900; font-size: 2.5rem; color: var(--brand-500); letter-spacing: -0.03em; }
             .location-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
             .stat-item { padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem; }
@@ -465,4 +469,3 @@ function closeDetail() {
         // window.scrollTo({ top: 0, behavior: 'smooth' }); // REMOVED: Stop jumping to top
     }});
 }
-
