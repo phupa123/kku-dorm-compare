@@ -41,20 +41,107 @@
         </div>
     </section>
 
-    <!-- Table -->
+    <!-- Table Section -->
     <section style="padding:0 3rem 6rem">
-        <div style="max-width:80rem;margin:0 auto" class="reveal-up" style="transition-delay:0.2s">
-            <div class="v-card" style="overflow:hidden">
+        <div style="max-width:98rem;margin:0 auto" class="reveal-up" style="transition-delay:0.2s">
+            
+            <!-- Sorting & View Toolbar -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;background:white;padding:1rem 2rem;border-radius:1.5rem;box-shadow:var(--shadow-soft);border:1px solid var(--neutral-100);flex-wrap:wrap;gap:1.5rem">
+                <div style="display:flex;align-items:center;gap:1.5rem">
+                    <div style="display:flex;align-items:center;gap:0.75rem">
+                        <span style="font-size:10px;font-weight:900;color:var(--neutral-400);text-transform:uppercase;letter-spacing:0.1em">Sort by:</span>
+                        <select id="compareSort" onchange="renderTable()" class="form-input" style="width:220px;margin:0;padding:0.5rem 1rem;font-size:11px;font-weight:800;border-radius:0.75rem;background:var(--neutral-50)">
+                            <option value="default">Default (ดั้งเดิม)</option>
+                            <option value="price-asc">ราคา: ถูก ➔ แพง</option>
+                            <option value="price-desc">ราคา: แพง ➔ ถูก</option>
+                            <option value="deposit-asc">มัดจำ: น้อย ➔ มาก</option>
+                            <option value="deposit-desc">มัดจำ: มาก ➔ น้อย</option>
+                            <option value="dist-asc">ระยะทาง: ใกล้ ➔ ไกล</option>
+                            <option value="dist-desc">ระยะทาง: ไกล ➔ ใกล้</option>
+                            <option value="fac-desc">สิ่งอำนวยความสะดวก: มาก ➔ น้อย</option>
+                            <option value="fac-asc">สิ่งอำนวยความสะดวก: น้อย ➔ มาก</option>
+                            <option value="size-desc">ขนาดห้อง: ใหญ่ ➔ เล็ก</option>
+                            <option value="size-asc">ขนาดห้อง: เล็ก ➔ ใหญ่</option>
+                            <option value="floors-desc">จำนวนชั้น: มาก ➔ น้อย</option>
+                            <option value="floors-asc">จำนวนชั้น: น้อย ➔ มาก</option>
+                            <option value="name-asc">ชื่อ: ก ➔ ฮ (A-Z)</option>
+                            <option value="name-desc">ชื่อ: ฮ ➔ ก (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display:flex;align-items:center;gap:1rem">
+                    <!-- Reset Button -->
+                    <button onclick="resetTable()" class="btn-ghost" style="padding:0.6rem 1.2rem;font-size:10px;border-radius:1rem;background:var(--brand-50);color:var(--brand-500);border:1px solid var(--brand-100)">
+                        <i class="fas fa-rotate-left"></i> Reset All
+                    </button>
+
+                    <!-- Dorm Toggle Dropdown -->
+                    <div style="position:relative">
+                        <button onclick="toggleDormMenu()" class="btn-ghost" style="padding:0.6rem 1.2rem;font-size:10px;border-radius:1rem;background:var(--neutral-50)">
+                            <i class="fas fa-house-chimney"></i> Dorms Visibility
+                        </button>
+                        <div id="dormMenu" style="position:absolute;top:100%;right:0;margin-top:0.5rem;background:white;border-radius:1.25rem;box-shadow:var(--shadow-heavy);padding:1rem;z-index:100;display:none;min-width:240px;border:1px solid var(--neutral-100)">
+                            <p style="font-size:9px;font-weight:900;color:var(--neutral-400);text-transform:uppercase;margin-bottom:0.75rem;padding:0 0.5rem">Show/Hide Dorms</p>
+                            <div id="dormToggles" class="custom-scrollbar" style="display:flex;flex-direction:column;gap:0.25rem;max-height:300px;overflow-y:auto">
+                                <!-- Will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column Toggle Dropdown -->
+                    <div style="position:relative">
+                        <button onclick="toggleColumnMenu()" class="btn-ghost" style="padding:0.6rem 1.2rem;font-size:10px;border-radius:1rem;background:var(--neutral-50)">
+                            <i class="fas fa-columns-3"></i> Column Settings
+                        </button>
+                        <div id="columnMenu" style="position:absolute;top:100%;right:0;margin-top:0.5rem;background:white;border-radius:1.25rem;box-shadow:var(--shadow-heavy);padding:1rem;z-index:100;display:none;min-width:200px;border:1px solid var(--neutral-100)">
+                            <p style="font-size:9px;font-weight:900;color:var(--neutral-400);text-transform:uppercase;margin-bottom:0.75rem;padding:0 0.5rem">Show/Hide Columns</p>
+                            <div id="colToggles" style="display:flex;flex-direction:column;gap:0.5rem">
+                                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;cursor:pointer;border-radius:0.75rem" class="hover-bg-neutral-50">
+                                    <input type="checkbox" checked data-col="col-price" onchange="updateColVis()"> <span style="font-size:11px;font-weight:700">Price</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;cursor:pointer;border-radius:0.75rem" class="hover-bg-neutral-50">
+                                    <input type="checkbox" checked data-col="col-deposit" onchange="updateColVis()"> <span style="font-size:11px;font-weight:700">Deposit</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;cursor:pointer;border-radius:0.75rem" class="hover-bg-neutral-50">
+                                    <input type="checkbox" checked data-col="col-dist" onchange="updateColVis()"> <span style="font-size:11px;font-weight:700">Distance</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;cursor:pointer;border-radius:0.75rem" class="hover-bg-neutral-50">
+                                    <input type="checkbox" checked data-col="col-travel" onchange="updateColVis()"> <span style="font-size:11px;font-weight:700">Travel Time</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;cursor:pointer;border-radius:0.75rem" class="hover-bg-neutral-50">
+                                    <input type="checkbox" checked data-col="col-spec" onchange="updateColVis()"> <span style="font-size:11px;font-weight:700">Size & Floors</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;cursor:pointer;border-radius:0.75rem" class="hover-bg-neutral-50">
+                                    <input type="checkbox" checked data-col="col-fac" onchange="updateColVis()"> <span style="font-size:11px;font-weight:700">Facilities</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleZoom()" class="btn-ghost" style="padding:0.6rem 1.2rem;font-size:10px;border-radius:1rem;background:var(--neutral-900);color:white">
+                        <i class="fas fa-expand" id="zoomIcon"></i> <span id="zoomText">Expand Table</span>
+                    </button>
+                    <div style="font-size:10px;font-weight:900;color:var(--neutral-400);margin-left:1rem">
+                        <span id="compareCount" style="color:var(--brand-500);font-size:1rem">0</span> DORMITORIES
+                    </div>
+                </div>
+            </div>
+
+            <div class="v-card" style="overflow:hidden;border-radius:1.5rem">
                 <div style="overflow-x:auto" class="custom-scrollbar">
-                    <table class="comparison-table" style="min-width:1100px">
+                    <table id="comparisonTable" class="comparison-table compact" style="min-width:1400px;transition:all 0.3s ease">
                         <thead>
-                            <tr>
-                                <th style="text-align:left;padding-left:2.5rem;width:300px">Dormitory</th>
-                                <th style="width:150px">Rate (฿)</th>
-                                <th style="width:120px">Distance</th>
-                                <th style="width:100px">Travel</th>
-                                <th style="width:200px">Facilities</th>
-                                <th style="width:150px">Actions</th>
+                            <tr style="cursor:pointer;user-select:none;">
+                                <th onclick="toggleSort('name')" style="text-align:left;padding-left:2rem;width:240px;position:sticky;left:0;background:white;z-index:20">Dormitory <i class="fas fa-sort"></i></th>
+                                <th onclick="toggleSort('price')" class="col-price" style="width:140px">Price <i class="fas fa-sort"></i></th>
+                                <th onclick="toggleSort('deposit')" class="col-deposit" style="width:140px">Deposit <i class="fas fa-sort"></i></th>
+                                <th onclick="toggleSort('dist')" class="col-dist" style="width:110px">Dist <i class="fas fa-sort"></i></th>
+                                <th onclick="toggleSort('dist')" class="col-travel" style="width:110px;cursor:pointer">Travel <i class="fas fa-sort"></i></th>
+                                <th onclick="toggleSort('size')" class="col-spec" style="width:90px">Size <i class="fas fa-sort"></i></th>
+                                <th onclick="toggleSort('floors')" class="col-spec" style="width:70px">Fl <i class="fas fa-sort"></i></th>
+                                <th onclick="toggleSort('fac')" class="col-fac" style="width:500px">Facilities & Features <i class="fas fa-sort"></i></th>
+                                <th style="width:100px">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="sheetBody"></tbody>
@@ -63,6 +150,35 @@
             </div>
         </div>
     </section>
+
+    <style>
+        /* Column Visibility Classes */
+        .hide-col-price .col-price { display: none !important; }
+        .hide-col-deposit .col-deposit { display: none !important; }
+        .hide-col-dist .col-dist { display: none !important; }
+        .hide-col-travel .col-travel { display: none !important; }
+        .hide-col-spec .col-spec { display: none !important; }
+        .hide-col-fac .col-fac { display: none !important; }
+
+        /* Compact Mode (Default) */
+        .comparison-table.compact th { padding: 1rem; font-size: 9px; }
+        .comparison-table.compact td { padding: 0.75rem 1rem; font-size: 11px; }
+        .comparison-table.compact .compact-features div { width: 22px; height: 22px; font-size: 9px; }
+        
+        /* Expanded Mode */
+        .comparison-table.expanded th { padding: 1.5rem; font-size: 12px; }
+        .comparison-table.expanded td { padding: 1.5rem; font-size: 14px; }
+        .comparison-table.expanded .compact-features { gap: 0.5rem !important; }
+        .comparison-table.expanded .compact-features div { width: 34px; height: 34px; font-size: 13px; border-radius: 10px; }
+        
+        /* High Contrast Icons */
+        .fac-icon { position: relative; transition: all 0.2s; }
+        .fac-icon.missing { background: var(--neutral-100) !important; color: var(--neutral-400) !important; border: 1px dashed var(--neutral-300) !important; opacity: 0.8; }
+        
+        .hover-bg-neutral-50:hover { background: var(--neutral-50); }
+        .comparison-table th i { font-size: 8px; opacity: 0.2; margin-left: 4px; transition: opacity 0.2s; }
+        .comparison-table th:hover i { opacity: 0.8; }
+    </style>
 
     <!-- Footer -->
     <footer style="padding:3rem;text-align:center;border-top:1px solid var(--neutral-100)">
