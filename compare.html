@@ -45,30 +45,42 @@
     <section style="padding:0 3rem 6rem">
         <div style="max-width:98rem;margin:0 auto" class="reveal-up" style="transition-delay:0.2s">
             
-            <!-- Sorting & View Toolbar -->
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;background:white;padding:1rem 2rem;border-radius:1.5rem;box-shadow:var(--shadow-soft);border:1px solid var(--neutral-100);flex-wrap:wrap;gap:1.5rem">
-                <div style="display:flex;align-items:center;gap:1.5rem">
-                    <div style="display:flex;align-items:center;gap:0.75rem">
-                        <span style="font-size:10px;font-weight:900;color:var(--neutral-400);text-transform:uppercase;letter-spacing:0.1em">Sort by:</span>
-                        <select id="compareSort" onchange="renderTable()" class="form-input" style="width:220px;margin:0;padding:0.5rem 1rem;font-size:11px;font-weight:800;border-radius:0.75rem;background:var(--neutral-50)">
-                            <option value="default">Default (ดั้งเดิม)</option>
-                            <option value="price-asc">ราคา: ถูก ➔ แพง</option>
-                            <option value="price-desc">ราคา: แพง ➔ ถูก</option>
-                            <option value="deposit-asc">มัดจำ: น้อย ➔ มาก</option>
-                            <option value="deposit-desc">มัดจำ: มาก ➔ น้อย</option>
-                            <option value="dist-asc">ระยะทาง: ใกล้ ➔ ไกล</option>
-                            <option value="dist-desc">ระยะทาง: ไกล ➔ ใกล้</option>
-                            <option value="fac-desc">สิ่งอำนวยความสะดวก: มาก ➔ น้อย</option>
-                            <option value="fac-asc">สิ่งอำนวยความสะดวก: น้อย ➔ มาก</option>
-                            <option value="size-desc">ขนาดห้อง: ใหญ่ ➔ เล็ก</option>
-                            <option value="size-asc">ขนาดห้อง: เล็ก ➔ ใหญ่</option>
-                            <option value="floors-desc">จำนวนชั้น: มาก ➔ น้อย</option>
-                            <option value="floors-asc">จำนวนชั้น: น้อย ➔ มาก</option>
-                            <option value="name-asc">ชื่อ: ก ➔ ฮ (A-Z)</option>
-                            <option value="name-desc">ชื่อ: ฮ ➔ ก (Z-A)</option>
-                        </select>
+            <!-- Zone & Sorting Toolbar -->
+            <div style="display:flex;flex-direction:column;gap:1.5rem;margin-bottom:2rem">
+                <!-- Zone Filters -->
+                <div style="display:flex;justify-content:center;align-items:center;gap:1rem;flex-wrap:wrap">
+                    <div id="zoneFilters" style="display:flex;background:white;padding:6px;border-radius:var(--radius-pill);border:1px solid var(--neutral-100);box-shadow:var(--shadow-card);overflow-x:auto;max-width:100vw">
+                        <button onclick="setFilter('all')" class="zone-btn active" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:var(--neutral-900);color:white;white-space:nowrap">ทั้งหมด</button>
+                        <button onclick="setFilter('หลังมอ')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">หลังมอ</button>
+                        <button onclick="setFilter('กังสดาล')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">กังสดาล</button>
+                        <button onclick="setFilter('โคลัมโบ')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">โคลัมโบ</button>
+                        <button onclick="setFilter('อื่นๆ')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">อื่นๆ</button>
                     </div>
                 </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;background:white;padding:1rem 2rem;border-radius:1.5rem;box-shadow:var(--shadow-soft);border:1px solid var(--neutral-100);flex-wrap:wrap;gap:1.5rem">
+                    <div style="display:flex;align-items:center;gap:1.5rem">
+                        <div style="display:flex;align-items:center;gap:0.75rem">
+                            <span style="font-size:10px;font-weight:900;color:var(--neutral-400);text-transform:uppercase;letter-spacing:0.1em">Sort by:</span>
+                            <select id="compareSort" onchange="renderTable()" class="form-input" style="width:220px;margin:0;padding:0.5rem 1rem;font-size:11px;font-weight:800;border-radius:0.75rem;background:var(--neutral-50)">
+                                <option value="default">Default (ดั้งเดิม)</option>
+                                <option value="price-asc">ราคา: ถูก ➔ แพง</option>
+                                <option value="price-desc">ราคา: แพง ➔ ถูก</option>
+                                <option value="deposit-asc">มัดจำ: น้อย ➔ มาก</option>
+                                <option value="deposit-desc">มัดจำ: มาก ➔ น้อย</option>
+                                <option value="dist-asc">ระยะทาง: ใกล้ ➔ ไกล</option>
+                                <option value="dist-desc">ระยะทาง: ไกล ➔ ใกล้</option>
+                                <option value="fac-desc">สิ่งอำนวยความสะดวก: มาก ➔ น้อย</option>
+                                <option value="fac-asc">สิ่งอำนวยความสะดวก: น้อย ➔ มาก</option>
+                                <option value="size-desc">ขนาดห้อง: ใหญ่ ➔ เล็ก</option>
+                                <option value="size-asc">ขนาดห้อง: เล็ก ➔ ใหญ่</option>
+                                <option value="floors-desc">จำนวนชั้น: มาก ➔ น้อย</option>
+                                <option value="floors-asc">จำนวนชั้น: น้อย ➔ มาก</option>
+                                <option value="name-asc">ชื่อ: ก ➔ ฮ (A-Z)</option>
+                                <option value="name-desc">ชื่อ: ฮ ➔ ก (Z-A)</option>
+                            </select>
+                        </div>
+                    </div>
                 
                 <div style="display:flex;align-items:center;gap:1rem">
                     <!-- Reset Button -->

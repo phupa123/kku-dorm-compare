@@ -4,6 +4,7 @@
 let allDorms = [];
 let hiddenDorms = new Set();
 let sortStack = [];
+let currentZone = 'all';
 
 window.addEventListener('DOMContentLoaded', () => {
     Transition.init();
@@ -39,6 +40,16 @@ window.addEventListener('beforeunload', () => {
     sessionStorage.setItem('compareScrollPos', window.scrollY);
 });
 
+function setFilter(zone) {
+    currentZone = zone;
+    document.querySelectorAll('.zone-btn').forEach(btn => {
+        const isActive = btn.textContent.trim() === (zone === 'all' ? 'ทั้งหมด' : zone);
+        btn.style.background = isActive ? 'var(--neutral-900)' : 'transparent';
+        btn.style.color = isActive ? 'white' : 'var(--neutral-400)';
+    });
+    renderTable();
+}
+
 function renderDormToggles() {
     const container = document.getElementById('dormToggles');
     if (!container) return;
@@ -53,25 +64,18 @@ function renderDormToggles() {
 
 function toggleDormVisibility(id) {
     if (hiddenDorms.has(id)) {
-        hiddenDorms.add(id);
-    } else {
-        // Find if it was hidden and remove it
-        if (hiddenDorms.has(id)) hiddenDorms.delete(id);
-        else hiddenDorms.add(id);
-    }
-    // Wait, the logic should be simpler:
-    // If it's in the set, it's HIDDEN.
-    // toggleDormVisibility(id) is called when checkbox changes.
-}
-
-// Rewriting toggle for clarity
-function toggleDormVisibility(id) {
-    if (hiddenDorms.has(id)) {
         hiddenDorms.delete(id);
     } else {
         hiddenDorms.add(id);
     }
     renderTable();
+}
+
+function quickHide(id) {
+    hiddenDorms.add(id);
+    renderDormToggles(); // Keep menu in sync
+    renderTable();
+    showToast('ซ่อนหอพักชั่วคราวแล้ว', 'info');
 }
 
 function toggleDormMenu() {
@@ -135,6 +139,7 @@ function toggleZoom() {
 function resetTable() {
     sortStack = [];
     hiddenDorms.clear();
+    setFilter('all');
     const select = document.getElementById('compareSort');
     if (select) select.value = 'default';
     const colToggles = document.querySelectorAll('#colToggles input');
@@ -166,10 +171,19 @@ function renderTable() {
     const body = document.getElementById('sheetBody');
     const countEl = document.getElementById('compareCount');
     
-    // 1. Filter
-    let sorted = allDorms.filter(d => !hiddenDorms.has(d.id));
+    // 1. Filter by hidden AND zone
+    const mainZones = ['หลังมอ', 'กังสดาล', 'โคลัมโบ'];
+    let filtered = allDorms.filter(d => !hiddenDorms.has(d.id));
     
+    if (currentZone !== 'all') {
+        filtered = filtered.filter(d => {
+            if (currentZone === 'อื่นๆ') return !mainZones.includes(d.zone);
+            return d.zone === currentZone;
+        });
+    }
+
     // 2. Sort
+    let sorted = [...filtered];
     const reversedStack = [...sortStack].reverse();
     for (const sortVal of reversedStack) {
         sorted.sort((a, b) => {
@@ -191,7 +205,7 @@ function renderTable() {
         });
     }
 
-    if (countEl) countEl.textContent = sorted.length;
+    if (countEl) countEl.textContent = `${sorted.length} / ${allDorms.length}`;
 
     const allFeatures = [
         'แอร์', 'พัดลม', 'น้ำอุ่น', 'Wi-Fi', 'ตู้เย็น', 'ทีวี', 'เฟอร์นิเจอร์', 
@@ -245,7 +259,7 @@ function renderTable() {
                 <td>
                     <div style="display:flex;gap:0.4rem;justify-content:center">
                         <a href="/explorer?id=${dorm.id}" style="width:32px;height:32px;background:var(--neutral-900);color:white;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"><i class="fas fa-expand" style="font-size:10px"></i></a>
-                        <button onclick="deleteDorm('${dorm.id}')" style="width:32px;height:32px;background:var(--neutral-50);color:var(--neutral-300);border:none;border-radius:8px;cursor:pointer"><i class="fas fa-trash-alt" style="font-size:10px"></i></button>
+                        <button onclick="quickHide('${dorm.id}')" style="width:32px;height:32px;background:var(--neutral-50);color:var(--neutral-400);border:none;border-radius:8px;cursor:pointer" title="ซ่อนชั่วคราว"><i class="fas fa-eye-slash" style="font-size:10px"></i></button>
                     </div>
                 </td>
             </tr>
