@@ -591,14 +591,15 @@ let registerMap = null;
 let registerMarker = null;
 
 function handleSmartCoordsPaste(value) {
-    if (!value) return;
+    if (!value || value.length < 3) return;
     
-    // Regular expression to find coordinates in Google Maps URLs
-    const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)|q=(-?\d+\.\d+),(-?\d+\.\d+)|ll=(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const match = value.match(regex);
+    // 1. Check for coordinates in URLs or raw strings first (Fastest)
+    const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)|q=(-?\d+\.\d+),(-?\d+\.\d+)|ll=(-?\d+\.\d+),(-?\d+\.\d+)|^(\s*-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/;
+    const match = value.match(coordRegex);
     
     if (match) {
         let lat, lng;
+        // Search through groups to find which one matched
         for (let i = 1; i < match.length; i += 2) {
             if (match[i] && match[i+1]) {
                 lat = match[i];
@@ -608,17 +609,62 @@ function handleSmartCoordsPaste(value) {
         }
         
         if (lat && lng) {
-            const coordsStr = `${lat}, ${lng}`;
-            document.getElementById('dormCoords').value = coordsStr;
-            showToast('ดึงพิกัดจากลิงก์เรียบร้อย!', 'success');
-            
-            if (registerMap) {
-                const pos = [parseFloat(lat), parseFloat(lng)];
-                updateRegisterMarker(pos);
-                registerMap.setView(pos, 16);
-            }
+            applyFoundCoords(lat, lng, 'ดึงพิกัดจากข้อมูลที่ระบุเรียบร้อย!');
+            return;
         }
     }
+
+    // 2. If it's a URL but no coords found (like shortened links) or it's an address/name
+    // Treat as a search query using Nominatim (OpenStreetMap)
+    searchLocation(value);
+}
+
+async function searchLocation(query) {
+    // If it's a shortened google maps link, we can't resolve it easily due to CORS,
+    // but we can try to extract keywords if it has any, or just treat as query.
+    let searchQuery = query;
+    if (query.includes('maps.app.goo.gl') || query.includes('google.com/maps')) {
+        // Try to extract name from place name in URL if possible
+        const placeMatch = query.match(/place\/([^\/]+)/);
+        if (placeMatch) searchQuery = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+    }
+
+    showToast('กำลังค้นหาตำแหน่ง...', 'info');
+    
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            const result = data[0];
+            applyFoundCoords(result.lat, result.lng, `พบตำแหน่ง: ${result.display_name.split(',')[0]}`);
+        } else {
+            // No results found
+            if (!query.includes(',')) { // Don't warn if it's just a half-typed coord
+                console.warn('Location search returned no results for:', searchQuery);
+            }
+        }
+    } catch (err) {
+        console.error('Geocoding error:', err);
+    }
+}
+
+function applyFoundCoords(lat, lng, message) {
+    const coordsStr = `${parseFloat(lat).toFixed(6)}, ${parseFloat(lng).toFixed(6)}`;
+    document.getElementById('dormCoords').value = coordsStr;
+    
+    // Auto-open and update map picker for verification
+    const container = document.getElementById('mapPickerContainer');
+    if (container.style.display !== 'block') {
+        container.style.display = 'block';
+        initRegisterMap();
+    } else {
+        const pos = [parseFloat(lat), parseFloat(lng)];
+        updateRegisterMarker(pos);
+        registerMap.setView(pos, 16);
+    }
+    
+    showToast(message, 'success');
 }
 
 function toggleMapPicker() {
