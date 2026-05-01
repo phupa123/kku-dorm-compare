@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EliteDorm | Premium KKU Dorm Planner</title>
+    <link rel="icon" type="image/png" href="/kku_dorm_elite_logo_1777569958199.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Public+Sans:wght@800;900&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen">
+        <div style="position:relative;width:120px;height:120px;margin-bottom:2rem">
+            <img src="/kku_dorm_elite_logo_1777569958199.png" style="width:100%;height:100%;object-fit:contain;filter:invert(1) brightness(2)">
+        </div>
+        <h1 style="color:white;font-family:'Public Sans',sans-serif;font-weight:900;font-size:2rem;letter-spacing:-0.05em">ELITE DORM</h1>
+        <p style="color:var(--brand-500);font-weight:900;font-size:9px;letter-spacing:0.5em;margin-top:0.5rem">KKU PLANNING PRO</p>
+        <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav">
+        <a href="/" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit">
+            <img src="/kku_dorm_elite_logo_1777569958199.png" style="width:36px;height:36px;object-fit:contain">
+            <span style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:20px;letter-spacing:-0.05em;font-style:italic">Elite<span style="color:var(--brand-500)">Dorm</span></span>
+        </a>
+        <div class="nav-links">
+            <a href="/" data-navigate="/" data-page="home" class="nav-link">Dashboard</a>
+            <a href="/explorer" data-navigate="/explorer" data-page="explorer" class="nav-link">Explorer</a>
+            <a href="/maps" data-navigate="/maps" data-page="maps" class="nav-link">Maps</a>
+            <a href="/compare" data-navigate="/compare" data-page="compare" class="nav-link">Comparison</a>
+        </div>
+        <button onclick="openDormModal()" class="btn-primary"><i class="fas fa-plus"></i> Register</button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section style="min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;padding:8rem 3rem 4rem">
+        <!-- Decorations -->
+        <div class="deco-grid" style="mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black,transparent)"></div>
+        <div class="deco-orb red" style="width:500px;height:500px;top:-100px;right:-150px"></div>
+        <div class="deco-orb blue" style="width:400px;height:400px;bottom:-100px;left:-100px"></div>
+        <div class="deco-line" style="height:100%;left:25%"></div>
+        <div class="deco-line" style="height:100%;left:50%"></div>
+        <div class="deco-line" style="height:100%;left:75%"></div>
+
+        <div style="max-width:80rem;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;position:relative;z-index:1">
+            <div class="reveal-up">
+                <div class="deco-badge" style="margin-bottom:2rem"><i class="fas fa-sparkles" style="color:var(--brand-500)"></i> Next-Gen Planning Platform</div>
+                <h1 style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:clamp(3rem,7vw,5.5rem);line-height:0.85;letter-spacing:-0.06em;margin-bottom:2rem">
+                    Find Your<br><span class="deco-gradient-text">Elite Dorm.</span>
+                </h1>
+                <p style="font-size:1.15rem;color:var(--neutral-400);max-width:28rem;line-height:1.8;margin-bottom:3rem">
+                    ระบบวางแผนและเปรียบเทียบหอพักอัจฉริยะ สำหรับนักศึกษา มข. ค้นหาพิกัดที่ใช่ ในราคาที่โดนใจ พร้อมข้อมูล Real-time
+                </p>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap">
+                    <a href="/explorer" data-navigate="/explorer" class="btn-primary" style="padding:1.25rem 3rem"><i class="fas fa-compass"></i> Start Hunting</a>
+                    <a href="/compare" data-navigate="/compare" class="btn-ghost"><i class="fas fa-chart-simple"></i> View Sheet</a>
+                </div>
+            </div>
+            <div class="reveal-up" style="transition-delay:0.2s">
+                <div style="background:white;padding:12px;border-radius:3.5rem;box-shadow:var(--shadow-heavy);position:relative;aspect-ratio:1;overflow:hidden">
+                    <div id="mainMap" style="width:100%;height:100%;border-radius:3rem;z-index:10"></div>
+                    <div style="position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none">
+                        <span class="deco-badge" style="box-shadow:var(--shadow-card)"><i class="fas fa-location-dot" style="color:var(--brand-500)"></i> Interactive Map</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Ribbon -->
+    <section style="padding:0 3rem;margin-top:-3rem;position:relative;z-index:2">
+        <div style="max-width:80rem;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem" class="reveal-up">
+            <div class="v-card" style="padding:2.5rem;text-align:center">
+                <p style="font-size:3rem;font-weight:900;letter-spacing:-0.05em" id="totalDorms">0</p>
+                <p style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:var(--neutral-400);margin-top:0.5rem">Active Listings</p>
+            </div>
+            <div class="v-card" style="padding:2.5rem;text-align:center">
+                <p style="font-size:3rem;font-weight:900;letter-spacing:-0.05em;color:var(--brand-500)" id="nearCount">0</p>
+                <p style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:var(--neutral-400);margin-top:0.5rem">Within 1 KM</p>
+            </div>
+            <div class="v-card" style="padding:2.5rem;text-align:center">
+                <p style="font-size:3rem;font-weight:900;letter-spacing:-0.05em">3</p>
+                <p style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:var(--neutral-400);margin-top:0.5rem">Zones Covered</p>
+            </div>
+            <div class="v-card" style="padding:2.5rem;background:var(--neutral-900);text-align:center">
+                <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem">
+                    <div class="animate-spin-slow" style="color:var(--brand-500);font-size:1.5rem"><i class="fas fa-satellite-dish"></i></div>
+                    <p style="font-size:1.25rem;font-weight:900;color:white;font-style:italic">Live Sync</p>
+                </div>
+                <p style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:var(--brand-500);margin-top:0.5rem">Real-time Active</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section style="padding:8rem 3rem;position:relative;overflow:hidden">
+        <div class="deco-dots" style="width:300px;height:300px;top:2rem;right:3rem"></div>
+        <div style="max-width:80rem;margin:0 auto">
+            <div class="reveal-up" style="text-align:center;margin-bottom:5rem">
+                <span class="deco-badge" style="margin-bottom:1.5rem"><i class="fas fa-gem" style="color:var(--brand-500)"></i> Why EliteDorm?</span>
+                <h2 style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:3.5rem;letter-spacing:-0.05em">
+                    Built for <span class="deco-gradient-text">Smart Decisions.</span>
+                </h2>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem">
+                <div class="v-card reveal-up" style="padding:3rem">
+                    <div style="width:64px;height:64px;background:var(--brand-50);color:var(--brand-500);border-radius:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:2rem"><i class="fas fa-bolt"></i></div>
+                    <h3 style="font-weight:900;font-size:1.25rem;margin-bottom:1rem">Real-time Data</h3>
+                    <p style="color:var(--neutral-400);line-height:1.8">ข้อมูลอัปเดตทันทีผ่าน Socket.io ไม่ต้องรีเฟรชหน้าจอ เหมือนใช้ Firebase</p>
+                </div>
+                <div class="v-card reveal-up" style="padding:3rem;transition-delay:0.1s">
+                    <div style="width:64px;height:64px;background:#eff6ff;color:#3b82f6;border-radius:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:2rem"><i class="fas fa-map-location-dot"></i></div>
+                    <h3 style="font-weight:900;font-size:1.25rem;margin-bottom:1rem">Smart Map</h3>
+                    <p style="color:var(--neutral-400);line-height:1.8">แผนที่อัจฉริยะพร้อมระบบคำนวณระยะทางจากหอพักถึงคณะแบบอัตโนมัติ</p>
+                </div>
+                <div class="v-card reveal-up" style="padding:3rem;transition-delay:0.2s">
+                    <div style="width:64px;height:64px;background:#fefce8;color:#eab308;border-radius:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:2rem"><i class="fas fa-scale-balanced"></i></div>
+                    <h3 style="font-weight:900;font-size:1.25rem;margin-bottom:1rem">Side-by-Side</h3>
+                    <p style="color:var(--neutral-400);line-height:1.8">เปรียบเทียบหอพักแบบจัดเต็ม ดูราคา สิ่งอำนวยความสะดวก และระยะทางพร้อมกัน</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section style="padding:6rem 3rem;position:relative;overflow:hidden">
+        <div style="max-width:80rem;margin:0 auto;background:var(--neutral-900);border-radius:4rem;padding:5rem;position:relative;overflow:hidden" class="reveal-up">
+            <div class="deco-orb red" style="width:400px;height:400px;top:-100px;right:-100px;opacity:0.2"></div>
+            <div class="deco-orb blue" style="width:300px;height:300px;bottom:-100px;left:-50px;opacity:0.15"></div>
+            <div style="position:relative;z-index:1;text-align:center">
+                <h2 style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:3rem;letter-spacing:-0.05em;color:white;margin-bottom:1.5rem">Ready to find your dorm?</h2>
+                <p style="color:var(--neutral-400);font-size:1.1rem;margin-bottom:3rem;max-width:30rem;margin-left:auto;margin-right:auto">เริ่มค้นหาหอพักในฝันของคุณวันนี้ ด้วยระบบ Elite ที่ออกแบบมาเพื่อนักศึกษา มข.</p>
+                <a href="/explorer" data-navigate="/explorer" class="btn-primary" style="padding:1.5rem 4rem;font-size:12px"><i class="fas fa-rocket"></i> Explore Now</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="padding:3rem;text-align:center;border-top:1px solid var(--neutral-100)">
+        <p style="font-size:11px;font-weight:700;color:var(--neutral-300)">EliteDorm &copy; 2026 &mdash; Built for KKU Students</p>
+    </footer>
+
+    <!-- Mobile Nav -->
+    <nav class="mobile-nav">
+        <a href="/" data-navigate="/"><i class="fas fa-house"></i></a>
+        <a href="/explorer" data-navigate="/explorer"><i class="fas fa-compass"></i></a>
+        <a href="#" onclick="openDormModal();return false" class="fab"><i class="fas fa-plus"></i></a>
+        <a href="/maps" data-navigate="/maps"><i class="fas fa-map-location-dot"></i></a>
+        <a href="/compare" data-navigate="/compare"><i class="fas fa-chart-simple"></i></a>
+    </nav>
+
+    <!-- Modals are dynamically injected by /js/shared.js -->
+
+    <script src="/js/shared.js"></script>
+    <script src="/js/home.js"></script>
+</body>
+</html>

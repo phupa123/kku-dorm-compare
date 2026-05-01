@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EliteDorm | Explorer</title>
+    <link rel="icon" type="image/png" href="/kku_dorm_elite_logo_1777569958199.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Public+Sans:wght@800;900&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body style="overflow-y:auto">
+
+    <!-- Navigation -->
+    <nav class="glass-nav">
+        <a href="/" data-navigate="/" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit">
+            <img src="/kku_dorm_elite_logo_1777569958199.png" style="width:36px;height:36px;object-fit:contain">
+            <span style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:20px;letter-spacing:-0.05em;font-style:italic">Elite<span style="color:var(--brand-500)">Dorm</span></span>
+        </a>
+        <div class="nav-links">
+            <a href="/" data-navigate="/" data-page="home" class="nav-link">Dashboard</a>
+            <a href="/explorer" data-navigate="/explorer" data-page="explorer" class="nav-link">Explorer</a>
+            <a href="/maps" data-navigate="/maps" data-page="maps" class="nav-link">Maps</a>
+            <a href="/compare" data-navigate="/compare" data-page="compare" class="nav-link">Comparison</a>
+        </div>
+        <button onclick="openDormModal()" class="btn-primary"><i class="fas fa-plus"></i> Register</button>
+    </nav>
+
+    <!-- Page Header -->
+    <section style="padding:2rem 3rem 1rem;position:relative;overflow:hidden;margin-top:0">
+        <div class="deco-orb red" style="width:400px;height:400px;top:-100px;right:-100px"></div>
+        <div class="deco-dots" style="width:200px;height:200px;bottom:0;left:3rem"></div>
+        <div style="max-width:80rem;margin:0 auto;position:relative;z-index:1">
+            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:2rem;margin-bottom:3rem" class="reveal-up">
+                <div>
+                    <span class="deco-badge" style="margin-bottom:1.5rem"><i class="fas fa-compass" style="color:var(--brand-500)"></i> Explore & Discover</span>
+                    <h1 style="font-family:'Public Sans',sans-serif;font-weight:900;font-size:3.5rem;letter-spacing:-0.05em">The <span class="deco-gradient-text">Explorer</span></h1>
+                </div>
+                <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                    <div id="zoneFilters" style="display:flex;background:white;padding:6px;border-radius:var(--radius-pill);border:1px solid var(--neutral-100);box-shadow:var(--shadow-card);overflow-x:auto;max-width:100vw">
+                        <button onclick="setFilter('all')" class="zone-btn active" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:var(--neutral-900);color:white;white-space:nowrap">ทั้งหมด</button>
+                        <button onclick="setFilter('หลังมอ')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">หลังมอ</button>
+                        <button onclick="setFilter('กังสดาล')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">กังสดาล</button>
+                        <button onclick="setFilter('โคลัมโบ')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">โคลัมโบ</button>
+                        <button onclick="setFilter('อื่นๆ')" class="zone-btn" style="padding:0.75rem 1.5rem;border-radius:var(--radius-pill);border:none;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;background:transparent;color:var(--neutral-400);white-space:nowrap">อื่นๆ</button>
+                    </div>
+                    <div style="position:relative;display:flex;gap:0.5rem">
+                        <div style="position:relative">
+                            <input type="text" id="searchInput" placeholder="Search..." style="padding:0.85rem 1rem 0.85rem 3rem;border-radius:var(--radius-pill);border:1px solid var(--neutral-100);outline:none;font-size:13px;font-weight:600;width:250px;box-shadow:var(--shadow-card)">
+                            <i class="fas fa-search" style="position:absolute;left:1.25rem;top:50%;transform:translateY(-50%);color:var(--neutral-300)"></i>
+                        </div>
+                        <button onclick="document.getElementById('advancedFilters').style.display = document.getElementById('advancedFilters').style.display === 'none' ? 'flex' : 'none'" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--neutral-100);background:white;cursor:pointer;color:var(--neutral-500);box-shadow:var(--shadow-card)"><i class="fas fa-sliders-h"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Filters Panel -->
+            <div id="advancedFilters" style="display:none;background:white;padding:1.5rem 2rem;border-radius:1.5rem;box-shadow:var(--shadow-card);gap:2rem;flex-wrap:wrap;margin-bottom:3rem;animation:fadeIn 0.3s ease">
+                <div style="flex:1;min-width:200px">
+                    <label style="font-size:9px;font-weight:900;text-transform:uppercase;color:var(--neutral-400);margin-bottom:0.75rem;display:block">ช่วงราคา (Price Range)</label>
+                    <div style="display:flex;gap:0.75rem;align-items:center">
+                        <input type="number" id="filterMinPrice" placeholder="ต่ำสุด" oninput="renderGrid()" style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--neutral-200);outline:none;font-size:12px;font-weight:700">
+                        <span style="color:var(--neutral-300)">-</span>
+                        <input type="number" id="filterMaxPrice" placeholder="สูงสุด" oninput="renderGrid()" style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--neutral-200);outline:none;font-size:12px;font-weight:700">
+                    </div>
+                </div>
+                <div style="flex:2;min-width:300px">
+                    <label style="font-size:9px;font-weight:900;text-transform:uppercase;color:var(--neutral-400);margin-bottom:0.75rem;display:block">สิ่งอำนวยความสะดวกเด่น</label>
+                    <div id="filterFeatures" style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                        <label class="feature-filter-btn"><input type="checkbox" value="แอร์" style="display:none;" onchange="toggleFilterStyle(this)"> <i class="fas fa-wind"></i> แอร์</label>
+                        <label class="feature-filter-btn"><input type="checkbox" value="น้ำอุ่น" style="display:none;" onchange="toggleFilterStyle(this)"> <i class="fas fa-droplet"></i> น้ำอุ่น</label>
+                        <label class="feature-filter-btn"><input type="checkbox" value="Wi-Fi" style="display:none;" onchange="toggleFilterStyle(this)"> <i class="fas fa-wifi"></i> Wi-Fi</label>
+                        <label class="feature-filter-btn"><input type="checkbox" value="เลี้ยงสัตว์ได้" style="display:none;" onchange="toggleFilterStyle(this)"> <i class="fas fa-dog"></i> เลี้ยงสัตว์ได้</label>
+                        <label class="feature-filter-btn"><input type="checkbox" value="ฟิตเนส" style="display:none;" onchange="toggleFilterStyle(this)"> <i class="fas fa-dumbbell"></i> ฟิตเนส</label>
+                        <label class="feature-filter-btn"><input type="checkbox" value="สระว่ายน้ำ" style="display:none;" onchange="toggleFilterStyle(this)"> <i class="fas fa-swimming-pool"></i> สระว่ายน้ำ</label>
+                        <label class="feature-filter-btn"><input type="checkbox" value="ที่จอดรถ" style="display:none;" onchange="toggleFilterStyle(this)"> <i class="fas fa-car"></i> ที่จอดรถ</label>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:flex-end">
+                    <label style="cursor:pointer;display:flex;align-items:center;gap:0.75rem;font-size:11px;font-weight:900;color:var(--brand-500);background:var(--brand-50);padding:0.85rem 1.5rem;border-radius:1rem"><input type="checkbox" id="filterFavorites" onchange="renderGrid()" style="accent-color:var(--brand-500);width:16px;height:16px"> <i class="fas fa-heart"></i> ดูเฉพาะรายการโปรด</label>
+                </div>
+            </div>
+            <style>
+                .feature-filter-btn { cursor:pointer; background:var(--neutral-50); padding:0.6rem 1rem; border-radius:0.75rem; font-size:11px; font-weight:800; color:var(--neutral-500); transition:all 0.2s; border:1px solid var(--neutral-200); }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+            </style>
+            <script>
+                function toggleFilterStyle(cb) {
+                    const label = cb.parentElement;
+                    if (cb.checked) {
+                        label.style.background = 'var(--brand-500)';
+                        label.style.color = 'white';
+                        label.style.borderColor = 'var(--brand-500)';
+                    } else {
+                        label.style.background = 'var(--neutral-50)';
+                        label.style.color = 'var(--neutral-500)';
+                        label.style.borderColor = 'var(--neutral-200)';
+                    }
+                    if (typeof renderGrid === 'function') renderGrid();
+                }
+            </script>
+        </div>
+    </section>
+
+    <!-- Grid -->
+    <section style="padding:0 3rem 6rem">
+        <div style="max-width:80rem;margin:0 auto">
+            <div id="dormGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2.5rem"></div>
+        </div>
+    </section>
+
+    <!-- Detail Overlay -->
+    <div id="detailOverlay" style="position:fixed;inset:0;z-index:8000;background:var(--neutral-50);display:none;overflow-y:auto"></div>
+
+    <!-- Mobile Nav -->
+    <nav class="mobile-nav">
+        <a href="/" data-navigate="/"><i class="fas fa-house"></i></a>
+        <a href="/explorer" data-navigate="/explorer" class="active"><i class="fas fa-compass"></i></a>
+        <a href="#" onclick="openDormModal();return false" class="fab"><i class="fas fa-plus"></i></a>
+        <a href="/maps" data-navigate="/maps"><i class="fas fa-map-location-dot"></i></a>
+        <a href="/compare" data-navigate="/compare"><i class="fas fa-chart-simple"></i></a>
+    </nav>
+
+    <!-- Modals are dynamically injected by /js/shared.js -->
+
+    <script src="/js/shared.js"></script>
+    <script src="/js/explorer.js"></script>
+</body>
+</html>
