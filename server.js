@@ -88,7 +88,10 @@ const Dorm = mongoose.model('Dorm', dormSchema);
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
+
+// Explicitly serve root and subfolders
+app.use(express.static(path.join(__dirname)));
+app.use('/js', express.static(path.join(__dirname, 'js')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ===== Page Routes =====
